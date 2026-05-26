@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今日の献立">
+<meta name="theme-color" content="#FAFAF8">
+<title>今日の献立</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Hiragino Sans', 'Noto Sans JP', 'YuGothic', sans-serif; background: #FAFAF8; min-height: 100vh; }
+  .app { max-width: 480px; margin: 0 auto; padding: 20px 14px 40px; }
+  .subtitle { font-size: 12px; color: #999; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .date-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .nav-btn { background: white; border: 1px solid #E0E0E0; border-radius: 8px; width: 38px; height: 38px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #444; flex-shrink: 0; }
+  .nav-btn:active { background: #F5F5F5; }
+  .date-label { flex: 1; text-align: center; font-size: 16px; font-weight: 700; color: #1A1A1A; }
+  .tool-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 700; }
+  .meals { display: flex; flex-direction: column; gap: 12px; }
+  .meal-card { background: white; border-radius: 14px; border: 1px solid #EBEBEB; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .accent-bar { height: 4px; }
+  .card-body { padding: 14px 16px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .meal-type-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; }
+  .tool-tag { font-size: 11px; padding: 2px 9px; border-radius: 12px; font-weight: 700; }
+  .meal-name { font-size: 16px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px; }
+  .meal-desc { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 10px; }
+  .steps-btn { width: 100%; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 700; cursor: pointer; text-align: center; }
+  .steps-btn:active { opacity: 0.7; }
+  .steps { margin-top: 10px; }
+  .step { padding: 10px 0; border-top: 1px solid #F0F0F0; }
+  .step:first-child { border-top: none; }
+  .step-header { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 4px; }
+  .step-num { min-width: 22px; height: 22px; border-radius: 50%; color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-title { font-size: 13px; font-weight: 700; color: #1A1A1A; line-height: 1.5; }
+  .step-detail { font-size: 12px; color: #555; line-height: 1.6; margin-left: 32px; }
+  .ingredients-box { background: #F8F8F6; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .ingredients-title { font-size: 11px; font-weight: 700; color: #888; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .ingredient-row { display: flex; justify-content: space-between; font-size: 12px; color: #444; padding: 3px 0; border-bottom: 1px solid #EFEFEF; }
+  .ingredient-row:last-child { border-bottom: none; }
+  .ingredient-name { color: #333; }
+  .ingredient-amount { color: #666; font-weight: 600; }
+  .mode-tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 6px; background: #FFF3E0; color: #E65100; font-weight: 700; margin-left: 6px; }
+  .tip-box { margin-top: 14px; background: #FFFBF0; border: 1px solid #FFE082; border-radius: 12px; padding: 12px 16px; font-size: 13px; color: #5D4037; line-height: 1.6; }
+  .tip-title { font-weight: 700; color: #E65100; }
+  .regen-btn { margin-top: 14px; width: 100%; padding: 14px; font-size: 14px; font-weight: 700; color: #333; background: white; border: 1px solid #DCDCDC; border-radius: 12px; cursor: pointer; }
+  .regen-btn:active { background: #F5F5F5; }
+  .footer { margin-top: 12px; text-align: center; font-size: 11px; color: #BBB; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="subtitle">今日の献立</div>
+  <div class="date-nav">
+    <button class="nav-btn" onclick="changeDay(-1)">‹</button>
+    <div class="date-label" id="date-label"></div>
+    <button class="nav-btn" onclick="changeDay(1)">›</button>
+  </div>
+  <div class="tool-badges">
+    <span class="badge" style="background:#E3F2FD;color:#1565C0">🔥 ヘルシオ</span>
+    <span class="badge" style="background:#E8F5E9;color:#1B5E20">🍲 ホットクック</span>
+    <span class="badge" style="background:#FFF3E0;color:#E65100">🥤 ボンヌ</span>
+  </div>
+  <div class="meals" id="meals"></div>
+  <div class="tip-box" id="tip-box"></div>
+  <button class="regen-btn" onclick="randomize()">🔄 別の献立にする</button>
+  <div class="footer">1〜2人前 ・ 簡単レシピ</div>
+</div>
+
+<script>
+const WEEKDAYS = ["日","月","火","水","木","金","土"];
+
+const menus = [
+  // 0: 日
+  {
+    breakfast:{
+      name:"豆腐とわかめの味噌汁＋ご飯", tool:"hotcook",
+      desc:"材料を入れてホットクックにおまかせ。手間ゼロの朝ごはん。",
+      ingredients:[
+        {name:"絹ごし豆腐", amount:"1/2丁（約150g）"},
+        {name:"乾燥わかめ", amount:"大さじ1"},
+        {name:"水", amount:"350ml"},
+        {name:"味噌", amount:"大さじ1"},
+        {name:"ご飯", amount:"茶碗1杯分"}
+      ],
+      steps:[
+        {title:"豆腐を切る", detail:"豆腐を2cm角のさいの目切りにする。"},
+        {title:"ホットクックに材料を入れる", detail:"内鍋に水350ml・わかめ・豆腐を入れ、味噌を加える。"},
+        {title:"調理スタート", detail:"【ホットクック】メニューを選ぶ →「スープ・汁物」→「みそ汁」→ スタート（約15分）。"},
+        {title:"完成", detail:"ご飯と一緒に盛り付けて完成。"}
+      ]
+    },
+    lunch:{
+      name:"鮭のヘルシオ蒸し焼き定食", tool:"healsio",
+      desc:"切り身を乗せてスイッチON。外こんがり、中ふっくら。",
+      ingredients:[
+        {name:"生鮭の切り身", amount:"1切れ（約100g）"},
+        {name:"塩", amount:"少々（両面に薄く）"},
+        {name:"こしょう", amount:"少々"},
+        {name:"レモン（お好みで）", amount:"1/4個"}
+      ],
+      steps:[
+        {title:"鮭に下味をつける", detail:"鮭の両面に塩・こしょうを薄くふり、5分ほど置く。"},
+        {title:"グリル皿に乗せる", detail:"ヘルシオのグリル皿（角皿）にクッキングシートを敷き、鮭を皮目を下にして乗せる。"},
+        {title:"調理スタート", detail:"【ヘルシオ】「まかせて調理」→「焼く」→「魚・肉」→ スタート（約15〜18分、自動で火加減調整）。"},
+        {title:"完成", detail:"焼き上がったらお皿に移し、お好みでレモンを添える。"}
+      ]
+    },
+    dinner:{
+      name:"鶏と根菜のホットクック蒸し", tool:"hotcook",
+      desc:"材料を切って入れるだけ。ポン酢でさっぱり仕上げ。",
+      ingredients:[
+        {name:"鶏もも肉", amount:"1枚（約250g）"},
+        {name:"ブロッコリー", amount:"1/2株（約100g）"},
+        {name:"にんじん", amount:"1/2本（約80g）"},
+        {name:"ポン酢", amount:"大さじ2"},
+        {name:"ごま油", amount:"小さじ1"}
+      ],
+      steps:[
+        {title:"鶏肉を切る", detail:"鶏もも肉を一口大（約4cm角）に切る。"},
+        {title:"野菜を切る", detail:"にんじんは乱切り（2〜3cm）。ブロッコリーは小房に分ける。"},
+        {title:"ホットクックに入れる", detail:"内鍋に鶏肉→にんじん→ブロッコリーの順に入れ、ポン酢・ごま油を回しかける。"},
+        {title:"調理スタート", detail:"【ホットクック】「手動で作る」→「蒸す」→「15分」→ スタート。"},
+        {title:"完成", detail:"全体を軽く混ぜてお皿に盛る。"}
+      ]
+    },
+    tip:"朝のうちにホットクックに夕食材料をセットして予約タイマーをかけると、帰宅後すぐ食べられます。"
+  },
+  // 1: 月
+  {
+    breakfast:{
+      name:"バナナ豆乳スムージー", tool:"bonne",
+      desc:"ボンヌに材料を入れてボタン1つ。タンパク質たっぷり。",
+      ingredients:[
+        {name:"バナナ", amount:"1本（約100g）"},
+        {name:"豆乳（無調整でも調製でもOK）", amount:"200ml"},
+        {name:"きな粉", amount:"大さじ1"},
+        {name:"はちみつ（お好みで）", amount:"小さじ1"}
+      ],
+      steps:[
+        {title:"バナナを折る", detail:"バナナを3〜4等分に折ってボンヌのカップに入れる（皮はむく）。"},
+        {title:"他の材料を加える", detail:"豆乳・きな粉・はちみつを加える。"},
+        {title:"ブレンドする", detail:"【ボンヌ】フタをしっかり閉めてスタートボタンを押す（約20〜30秒）。"},
+        {title:"完成", detail:"グラスに注いで完成。すぐに飲むと分離しない。"}
+      ]
+    },
+    lunch:{
+      name:"チーズトーストとコーンスープ", tool:"healsio",
+      desc:"ヘルシオのトーストモードでチーズとろとろ。缶スープで手軽に。",
+      ingredients:[
+        {name:"食パン（6枚切り）", amount:"1枚"},
+        {name:"スライスチーズ", amount:"1枚"},
+        {name:"ハム", amount:"1枚"},
+        {name:"市販コーンスープ（缶または粉末）", amount:"1人分"}
+      ],
+      steps:[
+        {title:"パンに具をのせる", detail:"食パンの上にハム・スライスチーズの順に乗せる。"},
+        {title:"ヘルシオでトースト", detail:"【ヘルシオ】「トースト」→「チーズトースト」→ スタート（約3〜4分）。"},
+        {title:"スープを準備する", detail:"コーンスープを電子レンジ（600W・2分）または鍋で温める。"},
+        {title:"完成", detail:"チーズが溶けてこんがりしたら完成。スープと一緒に盛り付ける。"}
+      ]
+    },
+    dinner:{
+      name:"豚の角煮", tool:"hotcook",
+      desc:"材料を入れるだけで本格的な角煮が完成。",
+      ingredients:[
+        {name:"豚バラ肉（ブロック）", amount:"300g"},
+        {name:"醤油", amount:"大さじ2"},
+        {name:"みりん", amount:"大さじ2"},
+        {name:"砂糖", amount:"大さじ1"},
+        {name:"酒", amount:"大さじ2"},
+        {name:"水", amount:"100ml"},
+        {name:"しょうが（チューブでもOK）", amount:"1かけ分（約5g）"}
+      ],
+      steps:[
+        {title:"豚肉を切る", detail:"豚バラブロックを4〜5cm角に切る。"},
+        {title:"ホットクックに入れる", detail:"内鍋に豚肉を入れ、醤油・みりん・砂糖・酒・水・しょうがを加える。"},
+        {title:"調理スタート", detail:"【ホットクック】メニューを選ぶ →「煮物」→「豚の角煮」→ スタート（約60分）。"},
+        {title:"完成", detail:"器に盛り、煮汁を少しかけて完成。からしを添えても美味しい。"}
+      ]
+    },
+    tip:"ボンヌはフルーツ×ヨーグルトでスムージーボウルにもアレンジ可能。冷凍フルーツもそのままOKです。"
+  },
+  // 2: 火
+  {
+    breakfast:{
+      name:"フレンチトースト", tool:"healsio",
+      desc:"卵液に浸してヘルシオにおまかせ。フライパン不要でふわふわに。",
+      ingredients:[
+        {name:"食パン（4〜6枚切り）", amount:"1枚"},
+        {name:"卵", amount:"1個"},
+        {name:"牛乳", amount:"50ml"},
+        {name:"砂糖", amount:"小さじ1"},
+        {name:"バター（お好みで）", amount:"少々"},
+        {name:"メープルシロップ（お好みで）", amount:"適量"}
+      ],
+      steps:[
+        {title:"卵液を作る", detail:"ボウルに卵・牛乳・砂糖を入れてよく混ぜる。"},
+        {title:"パンを浸す", detail:"食パンを卵液に入れ、両面に浸透させる（各面1〜2分）。"},
+        {title:"グリル皿に乗せる", detail:"ヘルシオのグリル皿にクッキングシートを敷き、パンを乗せる。"},
+        {title:"調理スタート", detail:"【ヘルシオ】「手動調理」→「グリル」→「両面焼き」→ 200℃ → 10分 → スタート。"},
+        {title:"完成", detail:"焼き上がったらお皿に盛り、メープルシロップをかけて完成。"}
+      ]
+    },
+    lunch:{
+      name:"野菜たっぷりポタージュ", tool:"bonne",
+      desc:"ボンヌで滑らか仕上げ。前日の残り野菜を活用できる。",
+      ingredients:[
+        {name:"玉ねぎ", amount:"1/2個（約100g）"},
+        {name:"じゃがいも", amount:"1個（約150g）"},
+        {name:"牛乳", amount:"150ml"},
+        {name:"コンソメ顆粒", amount:"小さじ1"},
+        {name:"塩・こしょう", amount:"少々"},
+        {name:"バター", amount:"5g"}
+      ],
+      steps:[
+        {title:"野菜を切る", detail:"玉ねぎは薄切り、じゃがいもは1cm厚の輪切りにする。"},
+        {title:"野菜を柔らかくする", detail:"玉ねぎ・じゃがいもを耐熱容器に入れ、電子レンジ600Wで5分加熱。竹串がすっと刺さればOK。"},
+        {title:"ボンヌでブレンド", detail:"【ボンヌ】温かい野菜・牛乳・コンソメ・バターをカップに入れ、フタをしてスタート（約30秒）。"},
+        {title:"温め直す", detail:"ブレンドしたスープを鍋に移し、弱火で温めながら塩・こしょうで味を整える。"},
+        {title:"完成", detail:"器に注ぎ、お好みでパセリをふって完成。"}
+      ]
+    },
+    dinner:{
+      name:"鶏ハム", tool:"hotcook",
+      desc:"ほぼ放置でしっとり鶏ハム。サラダやサンドイッチにも使い回せる。",
+      ingredients:[
+        {name:"鶏むね肉", amount:"1枚（約250g）"},
+        {name:"塩", amount:"小さじ1/2"},
+        {name:"砂糖", amount:"小さじ1/2"},
+        {name:"こしょう", amount:"少々"},
+        {name:"お好みのソース（ポン酢・マヨネーズ等）", amount:"適量"}
+      ],
+      steps:[
+        {title:"下味をつける", detail:"鶏むね肉に塩・砂糖・こしょうを全体にまぶし、ラップでぴっちり包む。"},
+        {title:"ホットクックに入れる", detail:"内鍋に水300mlを入れ、ラップで包んだ鶏肉をそのまま入れる。"},
+        {title:"調理スタート", detail:"【ホットクック】「手動で作る」→「発酵・低温調理」→「65℃」→「60分」→ スタート。"},
+        {title:"冷ます", detail:"完成後、ラップのまま取り出して粗熱を取る（そのままでも食べられる）。"},
+        {title:"完成", detail:"薄くスライスしてお皿に並べ、ポン酢やマヨネーズを添えて完成。"}
+      ]
+    },
+    tip:"鶏ハムは多めに作って冷蔵保存（3日間OK）。翌日はサラダ・丼・サンドイッチにアレンジできます。"
+  },
+  // 3: 水
+  {
+    breakfast:{
+      name:"具だくさん味噌汁＋ご飯", tool:"hotcook",
+      desc:"前日夜に予約タイマーをセットすれば朝には完成。",
+      ingredients:[
+        {name:"大根", amount:"3cm（約80g）"},
+        {name:"にんじん", amount:"1/4本（約50g）"},
+        {name:"油揚げ", amount:"1/2枚"},
+        {name:"水", amount:"400ml"},
+        {name:"味噌", amount:"大さじ1.5"},
+        {name:"だしの素（顆粒）", amount:"小さじ1/2"}
+      ],
+      steps:[
+        {title:"野菜を切る", detail:"大根は半月切り（厚さ5mm）、にんじんは半月切り（厚さ5mm）、油揚げは1cm幅の短冊切りにする。"},
+        {title:"ホットクックに入れる", detail:"内鍋に水・だしの素・大根・にんじん・油揚げを入れ、味噌を加える。"},
+        {title:"調理スタート（または予約）", detail:"【ホットクック】「メニューを選ぶ」→「スープ・汁物」→「みそ汁」→ スタート（約15分）。前夜に仕込む場合は「予約」で朝7時に設定。"},
+        {title:"完成", detail:"ご飯と一緒に盛り付けて完成。"}
+      ]
+    },
+    lunch:{
+      name:"ツナメルトサンド", tool:"healsio",
+      desc:"ヘルシオのトーストモードでチーズがとろとろに。",
+      ingredients:[
+        {name:"食パン（6枚切り）", amount:"2枚"},
+        {name:"ツナ缶（水煮）", amount:"1缶（約70g）"},
+        {name:"マヨネーズ", amount:"大さじ1"},
+        {name:"スライスチーズ", amount:"1枚"},
+        {name:"塩・こしょう", amount:"少々"}
+      ],
+      steps:[
+        {title:"ツナを混ぜる", detail:"ツナ缶の水気をよく切り、マヨネーズ・塩・こしょうと混ぜる。"},
+        {title:"パンに乗せる", detail:"食パン1枚にツナを広げ、チーズを乗せ、もう1枚のパンで挟む（またはオープンサンドでもOK）。"},
+        {title:"調理スタート", detail:"【ヘルシオ】「トースト」→「チーズトースト」→ スタート（約3〜4分）。オープンサンドの場合はそのままグリル皿に乗せる。"},
+        {title:"完成", detail:"チーズが溶けたら半分に切って完成。"}
+      ]
+    },
+    dinner:{
+      name:"さば塩焼き＋きのこ汁", tool:"healsio",
+      desc:"さばはヘルシオ、汁物はホットクックで同時調理。",
+      ingredients:[
+        {name:"さば（切り身）", amount:"1切れ（約120g）"},
+        {name:"塩", amount:"少々（両面に薄く）"},
+        {name:"しめじ", amount:"1/2パック（約50g）"},
+        {name:"えのき", amount:"1/4袋（約50g）"},
+        {name:"豆腐（絹ごし）", amount:"1/4丁（約75g）"},
+        {name:"水", amount:"350ml"},
+        {name:"味噌", amount:"大さじ1"},
+        {name:"だしの素", amount:"小さじ1/2"}
+      ],
+      steps:[
+        {title:"さばに塩をふる", detail:"さばの両面に塩を薄くふり、5分置いてから水分をペーパーで拭く。"},
+        {title:"きのこ・豆腐を切る", detail:"しめじとえのきは石づきを切り落としてほぐす。豆腐は2cm角に切る。"},
+        {title:"ホットクックに汁物をセット", detail:"【ホットクック】内鍋に水・だしの素・しめじ・えのき・豆腐・味噌を入れ、「スープ・汁物」→「みそ汁」→ スタート（約15分）。"},
+        {title:"ヘルシオでさばを焼く", detail:"【ヘルシオ】グリル皿にさばを乗せ、「まかせて調理」→「焼く」→「魚・肉」→ スタート（約15分）。ホットクックと同時にスタートするとちょうど同時に完成。"},
+        {title:"完成", detail:"さばと汁物を一緒に盛り付けて完成。"}
+      ]
+    },
+    tip:"ヘルシオとホットクックを同時使いすると主菜＋汁物が一度に揃い、合計30分以内に夕食完成！"
+  },
+  // 4: 木
+  {
+    breakfast:{
+      name:"ヨーグルトといちごのスムージー", tool:"bonne",
+      desc:"フルーツとヨーグルトをボンヌで混ぜるだけ。",
+      ingredients:[
+        {name:"いちご（冷凍でもOK）", amount:"6〜8粒（約80g）"},
+        {name:"プレーンヨーグルト", amount:"100ml"},
+        {name:"牛乳", amount:"50ml"},
+        {name:"はちみつ", amount:"小さじ1"}
+      ],
+      steps:[
+        {title:"材料をボンヌに入れる", detail:"いちごのヘタを取り（冷凍の場合はそのまま）、ヨーグルト・牛乳・はちみつと一緒にボンヌのカップに入れる。"},
+        {title:"ブレンドする", detail:"【ボンヌ】フタをしっかり閉めてスタートボタンを押す（約15〜20秒）。"},
+        {title:"完成", detail:"グラスに注いで完成。シリアルやグラノーラをトッピングしても◎。"}
+      ]
+    },
+    lunch:{
+      name:"チキンライス", tool:"hotcook",
+      desc:"米から作るホットクックのチキンライス。炊飯器いらず。",
+      ingredients:[
+        {name:"米", amount:"1合（150g）"},
+        {name:"鶏もも肉", amount:"小1枚（約150g）"},
+        {name:"玉ねぎ", amount:"1/4個（約50g）"},
+        {name:"ケチャップ", amount:"大さじ2"},
+        {name:"コンソメ顆粒", amount:"1個（約5g）"},
+        {name:"水", amount:"180ml"},
+        {name:"塩・こしょう", amount:"少々"}
+      ],
+      steps:[
+        {title:"鶏肉を切る", detail:"鶏もも肉を1.5cm角のさいの目切りにする。"},
+        {title:"玉ねぎを切る", detail:"玉ねぎをみじん切りにする。"},
+        {title:"ホットクックに入れる", detail:"内鍋に洗った米・水・コンソメ・ケチャップを入れ混ぜる。上に鶏肉と玉ねぎを広げる。塩・こしょうをふる。"},
+        {title:"調理スタート", detail:"【ホットクック】「手動で作る」→「炊飯」→ スタート（約30分）。"},
+        {title:"完成", detail:"炊き上がったらよく混ぜてお皿に盛る。お好みでパセリをふって完成。"}
+      ]
+    },
+    dinner:{
+      name:"グラタン", tool:"healsio",
+      desc:"市販ソースで手軽に。ヘルシオで表面こんがり仕上げ。",
+      ingredients:[
+        {name:"鶏もも肉", amount:"1/2枚（約150g）"},
+        {name:"玉ねぎ", amount:"1/4個（約50g）"},
+        {name:"マカロニ（ゆで済み）", amount:"50g（乾燥時）"},
+        {name:"市販ホワイトソース缶", amount:"1缶（約290g）"},
+        {name:"ピザ用チーズ", amount:"30g"},
+        {name:"塩・こしょう", amount:"少々"},
+        {name:"サラダ油", amount:"少々"}
+      ],
+      steps:[
+        {title:"マカロニをゆでる", detail:"マカロニを袋の表示通りにゆでて水気を切る（時短のため電子レンジゆでパスタ使用でもOK）。"},
+        {title:"鶏肉・玉ねぎを切る", detail:"鶏もも肉を2cm角、玉ねぎを薄切りにする。"},
+        {title:"炒める", detail:"フライパンにサラダ油を熱し、玉ねぎ→鶏肉の順に炒め、塩・こしょうをふる。火が通ったら火を止める。"},
+        {title:"ソースと混ぜる", detail:"炒めた具材とマカロニをホワイトソースで和え、耐熱皿に移す。"},
+        {title:"チーズをかける", detail:"上からピザ用チーズを均一に散らす。"},
+        {title:"ヘルシオで焼く", detail:"【ヘルシオ】「手動調理」→「グリル」→「両面焼き（上下ヒーター）」→ 220℃ → 12〜15分 → スタート。表面がこんがりきつね色になれば完成。"}
+      ]
+    },
+    tip:"グラタンは多めに作って冷蔵保存（2日間OK）。翌日はヘルシオで温め直すとまたこんがり仕上がります。"
+  },
+  // 5: 金
+  {
+    breakfast:{
+      name:"卵スープ＋トースト", tool:"healsio",
+      desc:"ヘルシオでトーストしながら、レンジで卵スープも同時進行。",
+      ingredients:[
+        {name:"卵", amount:"1個"},
+        {name:"水", amount:"150ml"},
+        {name:"コンソメ顆粒", amount:"小さじ1/2"},
+        {name:"塩・こしょう", amount:"少々"},
+        {name:"食パン（6枚切り）", amount:"1枚"},
+        {name:"お好みのトッピング（バター・ジャムなど）", amount:"適量"}
+      ],
+      steps:[
+        {title:"卵スープを準備する", detail:"マグカップに水・コンソメを入れ、卵を割り入れて軽く混ぜる（完全に混ぜなくてOK）。"},
+        {title:"食パンをセット", detail:"【ヘルシオ】食パンをトースト皿に乗せて「トースト」→ スタート（約3分）。"},
+        {title:"スープをレンジで加熱", detail:"【ヘルシオのレンジ機能】マグカップを庫内に入れ「レンジ」→「600W」→「2分」→ スタート。トーストと同時進行OK。"},
+        {title:"完成", detail:"トーストにバターやジャムを塗り、スープに塩・こしょうで味を整えて完成。"}
+      ]
+    },
+    lunch:{
+      name:"ひき肉と豆腐のあんかけ丼", tool:"hotcook",
+      desc:"材料を切らず入れるだけ。とろみのあるあんかけが絶品。",
+      ingredients:[
+        {name:"豚ひき肉", amount:"100g"},
+        {name:"絹ごし豆腐", amount:"1/2丁（約150g）"},
+        {name:"醤油", amount:"大さじ1"},
+        {name:"みりん", amount:"大さじ1"},
+        {name:"砂糖", amount:"小さじ1"},
+        {name:"水", amount:"100ml"},
+        {name:"片栗粉", amount:"小さじ2"},
+        {name:"水（片栗粉用）", amount:"大さじ1"},
+        {name:"ご飯", amount:"茶碗1杯"}
+      ],
+      steps:[
+        {title:"豆腐を切る", detail:"豆腐を2cm角のさいの目切りにする（崩れやすいので優しく）。"},
+        {title:"片栗粉を溶く", detail:"片栗粉と水大さじ1をよく混ぜて水溶き片栗粉を作る。"},
+        {title:"ホットクックに入れる", detail:"内鍋にひき肉・豆腐・醤油・みりん・砂糖・水100mlを入れる。"},
+        {title:"調理スタート", detail:"【ホットクック】「手動で作る」→「煮る（混ぜあり）」→「10分」→ スタート。"},
+        {title:"とろみをつける", detail:"完成後、水溶き片栗粉を加えて「手動で作る」→「煮る（混ぜあり）」→「2分」→ スタート。"},
+        {title:"完成", detail:"ご飯の上にかけて完成。お好みで刻みねぎをのせても◎。"}
+      ]
+    },
+    dinner:{
+      name:"肉じゃが", tool:"hotcook",
+      desc:"定番おかずもホットクックなら放置で本格的に完成。",
+      ingredients:[
+        {name:"豚バラ肉（薄切り）", amount:"150g"},
+        {name:"じゃがいも", amount:"2個（約300g）"},
+        {name:"玉ねぎ", amount:"1/2個（約100g）"},
+        {name:"にんじん", amount:"1/4本（約50g）"},
+        {name:"醤油", amount:"大さじ2"},
+        {name:"みりん", amount:"大さじ2"},
+        {name:"砂糖", amount:"大さじ1"},
+        {name:"だしの素", amount:"小さじ1/2"},
+        {name:"水", amount:"50ml"}
+      ],
+      steps:[
+        {title:"じゃがいもを切る", detail:"じゃがいもは皮をむき、4等分の乱切りにする。水にさらしてアクを抜く（5分）。"},
+        {title:"玉ねぎ・にんじんを切る", detail:"玉ねぎはくし形切り（8等分）、にんじんは乱切り（2〜3cm）にする。"},
+        {title:"豚肉を切る", detail:"豚バラを4〜5cm幅に切る。"},
+        {title:"ホットクックに入れる", detail:"内鍋に豚肉→じゃがいも→にんじん→玉ねぎの順に入れ、醤油・みりん・砂糖・だしの素・水を加える。"},
+        {title:"調理スタート", detail:"【ホットクック】「メニューを選ぶ」→「煮物」→「肉じゃが」→ スタート（約35分）。"},
+        {title:"完成", detail:"器に盛り付けて完成。じゃがいもが崩れやすいので優しくよそう。"}
+      ]
+    },
+    tip:"肉じゃがは多めに作ってコロッケにリメイクも。つぶす工程はボンヌで時短できます。"
+  },
+  // 6: 土
+  {
+    breakfast:{
+      name:"えびとブロッコリーのヘルシオ蒸し", tool:"healsio",
+      desc:"蒸気で素材の旨みを引き出すヘルシオ流。ヘルシーな朝食。",
+      ingredients:[
+        {name:"むきえび（冷凍でもOK）", amount:"100g"},
+        {name:"ブロッコリー", amount:"1/4株（約80g）"},
+        {name:"にんにく", amount:"1/2かけ"},
+        {name:"オリーブ油", amount:"小さじ2"},
+        {name:"塩", amount:"少々"},
+        {name:"こしょう", amount:"少々"},
+        {name:"レモン（お好みで）", amount:"1/4個"}
+      ],
+      steps:[
+        {title:"野菜・えびを準備する", detail:"ブロッコリーは小房に分ける。にんにくは薄切りにする。えびは冷凍なら解凍してペーパーで水気を拭く。"},
+        {title:"耐熱皿に並べる", detail:"ヘルシオ付属の耐熱皿（または角皿）にブロッコリー・えびを並べ、にんにくをのせる。"},
+        {title:"調味料をかける", detail:"オリーブ油を回しかけ、塩・こしょうをふる。"},
+        {title:"調理スタート", detail:"【ヘルシオ】「まかせて調理」→「蒸す」→「野菜・魚介」→ スタート（約12〜15分）。"},
+        {title:"完成", detail:"お皿に盛り付け、お好みでレモンを絞って完成。"}
+      ]
+    },
+    lunch:{
+      name:"ツナとコーンのホットクックスープ", tool:"hotcook",
+      desc:"缶詰だけで作れる手軽なスープ。パンと合わせて。",
+      ingredients:[
+        {name:"ツナ缶（水煮）", amount:"1缶（約70g）"},
+        {name:"コーン缶", amount:"1/2缶（約70g）"},
+        {name:"玉ねぎ", amount:"1/4個（約50g）"},
+        {name:"水", amount:"250ml"},
+        {name:"牛乳", amount:"100ml"},
+        {name:"コンソメ顆粒", amount:"1個（約5g）"},
+        {name:"塩・こしょう", amount:"少々"},
+        {name:"食パン", amount:"1枚"}
+      ],
+      steps:[
+        {title:"玉ねぎを切る", detail:"玉ねぎをみじん切りにする。"},
+        {title:"ホットクックに入れる", detail:"内鍋にツナ（汁ごと）・コーン・玉ねぎ・水・コンソメを入れる。"},
+        {title:"調理スタート", detail:"【ホットクック】「手動で作る」→「煮る（混ぜあり）」→「10分」→ スタート。"},
+        {title:"牛乳を加える", detail:"完成後に牛乳を加え、「手動で作る」→「煮る（混ぜなし）」→「3分」→ スタート（沸騰直前で止める）。"},
+        {title:"完成", detail:"塩・こしょうで味を整えて器に盛る。ヘルシオでトーストしたパンと一緒に。"}
+      ]
+    },
+    dinner:{
+      name:"チキンカレー", tool:"hotcook",
+      desc:"野菜を切って入れるだけの本格カレー。翌日も美味しい。",
+      ingredients:[
+        {name:"鶏もも肉", amount:"1枚（約250g）"},
+        {name:"玉ねぎ", amount:"1個（約200g）"},
+        {name:"にんじん", amount:"1/2本（約100g）"},
+        {name:"じゃがいも", amount:"2個（約300g）"},
+        {name:"カレールー", amount:"3〜4皿分（約100g）"},
+        {name:"水", amount:"300ml"},
+        {name:"サラダ油", amount:"小さじ1"},
+        {name:"ご飯", amount:"茶碗1〜2杯"}
+      ],
+      steps:[
+        {title:"鶏肉を切る", detail:"鶏もも肉を一口大（約4cm角）に切る。"},
+        {title:"野菜を切る", detail:"玉ねぎはくし形切り（8等分）、にんじんは乱切り（2〜3cm）、じゃがいもは4等分の乱切りにする。"},
+        {title:"ホットクックに入れる", detail:"内鍋に油・玉ねぎ・にんじん・じゃがいも・鶏肉の順に入れ、水を加える。カレールーを割り入れる（溶かさなくてOK）。"},
+        {title:"調理スタート", detail:"【ホットクック】「メニューを選ぶ」→「カレー・シチュー」→「カレー（チキンと野菜）」→ スタート（約45分）。"},
+        {title:"完成", detail:"ご飯の上にカレーをかけて完成。福神漬けやらっきょうを添えても◎。"}
+      ]
+    },
+    tip:"カレーは2食分作って冷蔵保存（3日間OK）。翌日はナンや素麺にかけてもアレンジ自在。"
+  }
+];
+
+// 追加レシピプール（「別の献立にする」で登場）
+const extraRecipes = {
+  lunch: [
+    {
+      name:"きのこリゾット", tool:"hotcook",
+      desc:"ホットクックにおまかせで本格リゾット。ボンヌで下ごしらえも楽々。",
+      ingredients:[
+        {name:"白米", amount:"0.5合（75g）"},
+        {name:"玉ねぎ（みじん切り）", amount:"1/8個（25g）"},
+        {name:"しめじ（小房に分ける）", amount:"1/2パック（50g）"},
+        {name:"エリンギ（縦4等分→薄切り）", amount:"1/2パック（50g）"},
+        {name:"厚切りベーコン（1cm角切り）", amount:"60g"},
+        {name:"コンソメ（顆粒）", amount:"小さじ1/2"},
+        {name:"バター", amount:"10g"},
+        {name:"にんにく（みじん切り）", amount:"1/2かけ"},
+        {name:"塩・こしょう", amount:"各少々"},
+        {name:"牛乳", amount:"100ml"},
+        {name:"水", amount:"75ml"},
+        {name:"粉チーズ", amount:"大さじ1/2"},
+        {name:"パセリ（みじん切り、お好みで）", amount:"適量"}
+      ],
+      steps:[
+        {title:"下ごしらえ（ボンヌ活用）", detail:"【ボンヌ】玉ねぎとにんにくをボンヌのカップに入れ、フタをしてスタート（約10秒）。みじん切り完成。しめじは小房に分け、エリンギは縦4等分にしてから薄切り、ベーコンは1cm角切りにする。"},
+        {title:"まぜ技ユニットをセット", detail:"ホットクック本体に「まぜ技ユニット」を取り付ける。"},
+        {title:"内鍋に材料を入れる", detail:"白米は洗って水気をきって内鍋に入れる。玉ねぎ・にんにく・しめじ・エリンギ・ベーコン・コンソメ・バター・塩こしょう・牛乳・水を加えて軽く混ぜる。"},
+        {title:"調理スタート", detail:"【ホットクック】「メニューを選ぶ」→「メニュー番号で探す」→「No.214（きのこリゾット）」→ スタート（約30分）。"},
+        {title:"仕上げ・完成", detail:"加熱終了後、粉チーズを加えて軽く混ぜる。器に盛り付け、お好みでパセリを散らして完成。"}
+      ]
+    }
+  ],
+  dinner: [
+    {
+      name:"きのこリゾット", tool:"hotcook",
+      desc:"ホットクックにおまかせで本格リゾット。ボンヌで下ごしらえも楽々。",
+      ingredients:[
+        {name:"白米", amount:"0.5合（75g）"},
+        {name:"玉ねぎ（みじん切り）", amount:"1/8個（25g）"},
+        {name:"しめじ（小房に分ける）", amount:"1/2パック（50g）"},
+        {name:"エリンギ（縦4等分→薄切り）", amount:"1/2パック（50g）"},
+        {name:"厚切りベーコン（1cm角切り）", amount:"60g"},
+        {name:"コンソメ（顆粒）", amount:"小さじ1/2"},
+        {name:"バター", amount:"10g"},
+        {name:"にんにく（みじん切り）", amount:"1/2かけ"},
+        {name:"塩・こしょう", amount:"各少々"},
+        {name:"牛乳", amount:"100ml"},
+        {name:"水", amount:"75ml"},
+        {name:"粉チーズ", amount:"大さじ1/2"},
+        {name:"パセリ（みじん切り、お好みで）", amount:"適量"}
+      ],
+      steps:[
+        {title:"下ごしらえ（ボンヌ活用）", detail:"【ボンヌ】玉ねぎとにんにくをボンヌのカップに入れ、フタをしてスタート（約10秒）。みじん切り完成。しめじは小房に分け、エリンギは縦4等分にしてから薄切り、ベーコンは1cm角切りにする。"},
+        {title:"まぜ技ユニットをセット", detail:"ホットクック本体に「まぜ技ユニット」を取り付ける。"},
+        {title:"内鍋に材料を入れる", detail:"白米は洗って水気をきって内鍋に入れる。玉ねぎ・にんにく・しめじ・エリンギ・ベーコン・コンソメ・バター・塩こしょう・牛乳・水を加えて軽く混ぜる。"},
+        {title:"調理スタート", detail:"【ホットクック】「メニューを選ぶ」→「メニュー番号で探す」→「No.214（きのこリゾット）」→ スタート（約30分）。"},
+        {title:"仕上げ・完成", detail:"加熱終了後、粉チーズを加えて軽く混ぜる。器に盛り付け、お好みでパセリを散らして完成。"}
+      ]
+    }
+  ]
+};
+
+const TOOL_CONFIG = {
+  healsio:{label:"ヘルシオ",color:"#1565C0",bg:"#E3F2FD",icon:"🔥"},
+  hotcook:{label:"ホットクック",color:"#1B5E20",bg:"#E8F5E9",icon:"🍲"},
+  bonne:{label:"ボンヌ",color:"#E65100",bg:"#FFF3E0",icon:"🥤"}
+};
+const MEAL_LABELS={breakfast:"朝食",lunch:"昼食",dinner:"夕食"};
+const MEAL_ORDER=["breakfast","lunch","dinner"];
+const MEAL_COLORS={
+  breakfast:{accent:"#F57C00",light:"#FFF8F0"},
+  lunch:{accent:"#0277BD",light:"#F0F7FF"},
+  dinner:{accent:"#4527A0",light:"#F5F0FF"}
+};
+
+let offset=0, randOff=0, expanded={}, useExtra=false, extraSlot="";
+
+function getDateLabel(off){
+  const d=new Date(); d.setDate(d.getDate()+off);
+  const m=d.getMonth()+1,day=d.getDate(),wd=WEEKDAYS[d.getDay()];
+  if(off===0) return `今日 ${m}/${day}（${wd}）`;
+  if(off===1) return `明日 ${m}/${day}（${wd}）`;
+  if(off===-1) return `昨日 ${m}/${day}（${wd}）`;
+  return `${m}/${day}（${wd}）`;
+}
+
+function render(){
+  const today=new Date(); today.setDate(today.getDate()+offset);
+  const dayIdx=(today.getDay()+randOff+700)%7;
+  const baseMenu=menus[dayIdx];
+  // extraレシピを差し込む場合は該当スロットだけ置き換え
+  const menu = useExtra && extraSlot ? {
+    ...baseMenu,
+    [extraSlot]: extraRecipes[extraSlot][0]
+  } : baseMenu;
+  document.getElementById("date-label").textContent=getDateLabel(offset);
+
+  const mealsEl=document.getElementById("meals");
+  mealsEl.innerHTML=MEAL_ORDER.map(key=>{
+    const meal=menu[key];
+    const tool=TOOL_CONFIG[meal.tool];
+    const mc=MEAL_COLORS[key];
+    const isOpen=!!expanded[key];
+
+    const ingredientsHtml=`
+      <div class="ingredients-box">
+        <div class="ingredients-title">📋 材料（1〜2人前）</div>
+        ${meal.ingredients.map(i=>`
+          <div class="ingredient-row">
+            <span class="ingredient-name">${i.name}</span>
+            <span class="ingredient-amount">${i.amount}</span>
+          </div>`).join("")}
+      </div>`;
+
+    const stepsHtml=`
+      <div class="steps">
+        ${meal.steps.map((s,i)=>`
+          <div class="step">
+            <div class="step-header">
+              <span class="step-num" style="background:${mc.accent}">${i+1}</span>
+              <span class="step-title">${s.title}</span>
+            </div>
+            <div class="step-detail">${s.detail}</div>
+          </div>`).join("")}
+      </div>`;
+
+    return `
+      <div class="meal-card">
+        <div class="accent-bar" style="background:${mc.accent}"></div>
+        <div class="card-body">
+          <div class="card-header">
+            <span class="meal-type-label" style="color:${mc.accent}">${MEAL_LABELS[key]}</span>
+            <span class="tool-tag" style="background:${tool.bg};color:${tool.color}">${tool.icon} ${tool.label}</span>
+          </div>
+          <div class="meal-name">${meal.name}</div>
+          <div class="meal-desc">${meal.desc}</div>
+          <button class="steps-btn" style="background:${mc.light};color:${mc.accent}" onclick="toggleStep('${key}')">
+            ${isOpen?"▲ 閉じる":"▼ 材料・手順を見る"}
+          </button>
+          ${isOpen ? ingredientsHtml + stepsHtml : ""}
+        </div>
+      </div>`;
+  }).join("");
+
+  document.getElementById("tip-box").innerHTML=
+    `<span class="tip-title">💡 今日のコツ</span><br>${menu.tip}`;
+}
+
+function changeDay(d){ offset+=d; expanded={}; useExtra=false; render(); }
+function randomize(){
+  // 通常メニュー7パターン＋追加レシピ（昼or夕）をローテーション
+  const total = 7 + 2; // 7曜日 + きのこリゾット昼 + きのこリゾット夕
+  const current = randOff % total;
+  const next = (current + 1) % total;
+  if(next < 7){
+    randOff = next; useExtra=false; extraSlot="";
+  } else if(next === 7){
+    useExtra=true; extraSlot="lunch"; randOff=(randOff+1)%7;
+  } else {
+    useExtra=true; extraSlot="dinner"; randOff=(randOff+1)%7;
+  }
+  randOff=(randOff+1)%7;
+  expanded={};
+  render();
+}
+function toggleStep(key){ expanded[key]=!expanded[key]; render(); }
+
+render();
+</script>
+</body>
+</html>
