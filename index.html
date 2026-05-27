@@ -593,7 +593,7 @@ const MEAL_COLORS={
   dinner:{accent:"#4527A0",light:"#F5F0FF"}
 };
 
-let offset=0, randOff=0, expanded={}, useExtra=false, extraSlot="";
+let offset=0, rotIdx=0, expanded={}, useExtra=false, extraSlot="", extraIdx=0;
 
 function getDateLabel(off){
   const d=new Date(); d.setDate(d.getDate()+off);
@@ -606,12 +606,12 @@ function getDateLabel(off){
 
 function render(){
   const today=new Date(); today.setDate(today.getDate()+offset);
-  const dayIdx=(today.getDay()+randOff+700)%7;
+  const dayIdx=(today.getDay()+rotIdx+700)%7;
   const baseMenu=menus[dayIdx];
   // extraレシピを差し込む場合は該当スロットだけ置き換え
   const menu = useExtra && extraSlot ? {
     ...baseMenu,
-    [extraSlot]: extraRecipes[extraSlot][0]
+    [extraSlot]: extraRecipes[extraSlot][extraIdx]
   } : baseMenu;
   document.getElementById("date-label").textContent=getDateLabel(offset);
 
@@ -668,18 +668,18 @@ function render(){
 
 function changeDay(d){ offset+=d; expanded={}; useExtra=false; render(); }
 function randomize(){
-  // 通常メニュー7パターン＋追加レシピ（昼or夕）をローテーション
-  const total = 7 + 2; // 7曜日 + きのこリゾット昼 + きのこリゾット夕
-  const current = randOff % total;
-  const next = (current + 1) % total;
-  if(next < 7){
-    randOff = next; useExtra=false; extraSlot="";
-  } else if(next === 7){
-    useExtra=true; extraSlot="lunch"; randOff=(randOff+1)%7;
+  const extras = [
+    {slot:"lunch",  idx:0},
+    {slot:"dinner", idx:1}
+  ];
+  const total = 7 + extras.length;
+  rotIdx = (rotIdx + 1) % total;
+  if(rotIdx < 7){
+    useExtra=false; extraSlot=""; extraIdx=0;
   } else {
-    useExtra=true; extraSlot="dinner"; randOff=(randOff+1)%7;
+    const e = extras[rotIdx - 7];
+    useExtra=true; extraSlot=e.slot; extraIdx=e.idx;
   }
-  randOff=(randOff+1)%7;
   expanded={};
   render();
 }
