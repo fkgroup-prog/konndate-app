@@ -576,6 +576,24 @@ const extraRecipes = {
         {title:"耐熱容器にセットする", detail:"耐熱容器にバターをぬり、かぼちゃとなすを交互に並べる。塩・こしょうをふり、ベーコンとピザ用チーズを散らす。"},
         {title:"加熱する", detail:"【ヘルシオ】耐熱容器を角皿にのせて上段に入れる。「探す」→「メニュー番号」→「No.1227」→ スタート（約20分）。チーズに焼き色がついたら完成。"}
       ]
+    },
+    {
+      name:"ビーフシチュー（市販ルウ使用）", tool:"hotcook",
+      desc:"市販ルウで本格ビーフシチュー。ホットクックにお任せで約40分。",
+      ingredients:[
+        {name:"玉ねぎ（くし切り）", amount:"1個（200g）"},
+        {name:"じゃがいも（乱切り）", amount:"1個（150g）"},
+        {name:"にんじん（乱切り）", amount:"1/4本（50g）"},
+        {name:"マッシュルーム", amount:"4個"},
+        {name:"牛角切り肉", amount:"150g"},
+        {name:"市販のビーフシチュールウ", amount:"2〜3皿分"},
+        {name:"水", amount:"パッケージ表示より約125mL減らした分量"}
+      ],
+      steps:[
+        {title:"まぜ技ユニットをセット", detail:"ホットクック本体に「まぜ技ユニット」をセットする。"},
+        {title:"内鍋に材料を入れる", detail:"材料を表の順番通りに内鍋に入れる：玉ねぎ→じゃがいも→にんじん→マッシュルーム→牛肉→水→ルウ。"},
+        {title:"調理スタート", detail:"【ホットクック】「メニューを選ぶ」→「メニュー番号で探す」→「No.345（ビーフシチュー(市販ルウ使用)）」→ スタート（約40分）。"}
+      ]
     }
   ]
 };
@@ -670,7 +688,8 @@ function changeDay(d){ offset+=d; expanded={}; useExtra=false; render(); }
 function randomize(){
   const extras = [
     {slot:"lunch",  idx:0},
-    {slot:"dinner", idx:1}
+    {slot:"dinner", idx:1},
+    {slot:"dinner", idx:2}
   ];
   const total = 7 + extras.length;
   rotIdx = (rotIdx + 1) % total;
